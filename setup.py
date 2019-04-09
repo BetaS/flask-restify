@@ -13,4 +13,5 @@ setup(
         'flask',
         'Flask-SQLAlchemy'
     ],
+    include_package_data=True
 )

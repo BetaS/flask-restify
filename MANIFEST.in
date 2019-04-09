@@ -1,0 +1,3 @@
+recursive-include flask_restify/docs/ui/dist *
+include flask_restify/docs/ui/templates/*
+include flask_restify/docs/ui/update.sh
