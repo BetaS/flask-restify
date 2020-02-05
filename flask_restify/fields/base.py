@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 
 
 class Field:
@@ -68,6 +69,9 @@ class Field:
 
         return data
 
+    def make_optional(self):
+        self.optional = True
+
 
 class Object(Field):
     data: {str: Field} = {}
@@ -99,6 +103,30 @@ class Object(Field):
 
         return data
 
+    def make_optional(self):
+        super().make_optional()
+
+        for k, v in self.data.items():
+            v.make_optional()
+
+    def validation(self, data):
+        if data is not None:
+            if type(data) == str:
+                try:
+                    data = json.loads(data)
+                except json.JSONDecodeError as e:
+                    raise ValidationException("invalid object")
+        else:
+            return None
+
+        for k, v in data.items():
+            if k in self.data:
+                data[k] = self.data[k].validation(v)
+
+        data = super().validation(data)
+
+        return data
+
 
 class Array(Field):
     item: Field = None
@@ -108,6 +136,28 @@ class Array(Field):
             "type": "array",
             "items": self.item.get_scheme()
         }
+
+        return data
+
+    def make_optional(self):
+        super().make_optional()
+
+        self.item.make_optional()
+
+    def validation(self, data):
+        data = super().validation(data)
+
+        if data is not None:
+            if type(data) == str:
+                try:
+                    data = json.loads(data)
+                except json.JSONDecodeError as e:
+                    raise ValidationException("invalid array")
+        else:
+            return None
+
+        for i, v in enumerate(data):
+            data[i] = self.item.validation(v)
 
         return data
 

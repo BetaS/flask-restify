@@ -34,7 +34,7 @@ class String(Field):
     def validation(self, data):
         data = super().validation(data)
 
-        if data:
+        if data is not None:
             if self.length:
                 if type(self.length) == dict:
                     if "min" in self.length:
@@ -78,6 +78,9 @@ class Enum(String):
         if self.nullstr is not None and data == self.nullstr:
             return None
 
+        if type(data) == self.type:
+            return data
+
         return self.find(self.type, data)
 
     @classmethod
@@ -86,7 +89,7 @@ class Enum(String):
 
     @classmethod
     def find(cls, type, name):
-        return next(e for e in type if e.name.lower() == name)
+        return next(e for e in type if e.name.lower() == name.lower())
 
 
 class JWT(String):

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from ..resource import Namespace
+from flask_restify.resource.namespace import Namespace
 
 from flask_restify import fields
 
@@ -64,8 +64,10 @@ class SwaggerDoc:
 
                     if type(res["model"]) == dict:
                         res["model"] = fields.Object(data=res["model"])
+                    elif type(res["model"]) == list:
+                        res["model"] = fields.Array(item=res["model"][0])
 
-                    if isinstance(res["model"], fields.Object):
+                    if isinstance(res["model"], (fields.Object, fields.Array)):
                         d["content"] = {
                             "application/json": res["model"].get_swagger(for_response=True)
                         }
@@ -75,7 +77,7 @@ class SwaggerDoc:
                 oper = {
                     "operationId": data["func"].__qualname__,
                     "summary": data["title"],
-                    "tags": [ns.tag]
+                    "tags": data["tags"]
                 }
 
                 if len(params):

@@ -1,16 +1,20 @@
 # -*- coding: utf-8 -*-
 
-from .docs import swagger, ui
-from .util import error
+from flask_restify.docs import swagger, ui
+from flask_restify.util import error
 
 from flask import Flask, Response, request
 from flask_sqlalchemy import SQLAlchemy
 
 from functools import wraps
-import json
+import json, traceback
 
 
-class API:
+class RequestContext:
+    pass
+
+
+class BaseAPI:
     app: Flask = None
     db: SQLAlchemy = SQLAlchemy()
     namespaces = {}
@@ -53,6 +57,8 @@ class API:
 
         self.app.after_request(self.after_request)
 
+        self.on_init()
+
         return self.app
 
     def handle_request(self, *args, **kwargs):
@@ -62,35 +68,41 @@ class API:
         ns = self.endpoint_map[request.endpoint]["ns"]
         func = self.endpoint_map[request.endpoint]["func"]
 
-        try:
-            target = ns.cls()
+        context = ns.context()  # ns.cls()
+        self.on_receive(context)
 
+        try:
             auth_header = request.headers.get('Authorization')
             try:
                 if auth_header and len(auth_header) > 0:
-                    target.update_authkey(auth_header.split(" ")[1])
+                    context.update_authkey(auth_header.split(" ")[1])
                 else:
-                    target.update_authkey("")
+                    context.update_authkey("")
             except BaseException as e:
                 raise error.HttpError(401, str(e))
 
-            result = func["func"](target, *args, **kwargs)
+            result = func["func"](context, *args, **kwargs)
             code = 200
 
             if type(result) == tuple:
                 code = result[1]
                 result = result[0]
 
-            return Response(response=json.dumps(result, ensure_ascii=False), headers=target.headers, status=code, mimetype="application/json")
+            return Response(response=json.dumps(result, ensure_ascii=False), headers=context.headers, status=code, mimetype="application/json")
         except error.HttpError as e:
+            self.on_error(context, e)
             return Response(response=json.dumps(e.to_dict(), ensure_ascii=False), status=e.code, mimetype="application/json")
+        except Exception as e:
+            self.on_error(context, error.HttpError(500, e, "Internal Server Error"))
+            traceback.print_tb(e.__traceback__)
+            return Response(response=json.dumps({"caused_by": str(e)}), status=500, mimetype="application/json")
 
     # noinspection PyMethodMayBeStatic
     def after_request(self, response):
         header = response.headers
         header['Access-Control-Allow-Origin'] = '*'
-        header['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, HEAD'
-        header['Access-Control-Allow-Headers'] = 'Authorization, X-Request-ID, Content-Type'
+        header['Access-Control-Allow-Methods'] = 'OPTIONS, GET, PUT, POST, HEAD, PATCH, DELETE, INDEX'
+        header['Access-Control-Allow-Headers'] = 'Authorization, X-Request-ID, X-PINGOTHER, Content-Type, Accept-Language, Origin, Referer'
         header['Access-Control-Expose-Headers'] = 'X-Request-ID, X-Authorization-Update'
 
         # Request ID가 있을 경우 처리
@@ -100,7 +112,7 @@ class API:
 
         return response
 
-    def namespace(self, ns):
+    def add_namespace(self, ns):
         tag = ns.tag
         path = ns.path
 
@@ -109,14 +121,13 @@ class API:
 
         self.namespaces[tag] = ns
 
-        def decorator(cls):
-            ns.cls = cls
-            self.docs.add_namespace(path, ns)
+        self.docs.add_namespace(path, ns)
 
-            @wraps(cls)
-            def wrapped_f(*args, **kwargs):
-                return cls(*args, **kwargs)
+    def on_init(self):
+        pass
 
-            return wrapped_f
+    def on_receive(self, context):
+        pass
 
-        return decorator
+    def on_error(self, context, e: error.HttpError):
+        pass

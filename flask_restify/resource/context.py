@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
 
-class BaseEndpoint:
+class BaseContext:
     headers = {}
 
     def __init__(self, **kwargs):
-        pass
+        self.headers = {}
 
     def on_auth(self):
         pass
