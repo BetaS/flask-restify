@@ -77,7 +77,7 @@ def parameter(path=None, header=None, body=None, query=None, form=None):
                 req.append((body, request.get_json()))
 
             if query:
-                req.append((query, request.args))
+                req.append((query, {k: v for k, v in request.args.items()}))
 
             if form:
                 req.append((form, request.form))
