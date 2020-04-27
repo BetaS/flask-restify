@@ -39,7 +39,9 @@ def parse_params(blueprint: dict, params: dict, defaults: dict={}) -> dict:
         # 옵셔널이면서 없음
         elif v.optional:
             # 파라미터 부족 오류
-            result[k] = _param_validation(k, v, None)
+            x = _param_validation(k, v, None)
+            if x is not None:
+                result[k] = x
 
         else:
             raise HttpError(400, "파라미터 누락 '{0}'".format(k))

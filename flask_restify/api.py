@@ -6,8 +6,10 @@ from flask_restify.util import error
 from flask import Flask, Response, request
 from flask_sqlalchemy import SQLAlchemy
 
-from functools import wraps
-import json, traceback
+import json
+import traceback
+import sys
+import atexit
 
 
 class RequestContext:
@@ -40,6 +42,9 @@ class BaseAPI:
         self.app.config.from_object(config)
 
         self.db.init_app(self.app)
+        atexit.register(self.on_exit)
+
+        self.on_init()
 
         self.app.register_blueprint(self.swaggerui, url_prefix="/docs")
 
@@ -56,8 +61,6 @@ class BaseAPI:
                     self.app.add_url_rule(path, func["title"], self.handle_request, methods=[method.upper(), ])
 
         self.app.after_request(self.after_request)
-
-        self.on_init()
 
         return self.app
 
@@ -94,6 +97,7 @@ class BaseAPI:
             return Response(response=json.dumps(e.to_dict(), ensure_ascii=False), status=e.code, mimetype="application/json")
         except Exception as e:
             self.on_error(context, error.HttpError(500, e, "Internal Server Error"))
+            print(e, file=sys.stderr)
             traceback.print_tb(e.__traceback__)
             return Response(response=json.dumps({"caused_by": str(e)}), status=500, mimetype="application/json")
 
@@ -130,4 +134,7 @@ class BaseAPI:
         pass
 
     def on_error(self, context, e: error.HttpError):
+        pass
+
+    def on_exit(self):
         pass
