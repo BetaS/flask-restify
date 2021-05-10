@@ -117,11 +117,16 @@ class Object(Field):
                 except json.JSONDecodeError as e:
                     raise ValidationException("invalid object")
         else:
-            return None
+            return super().validation(None)
 
-        for k, v in data.items():
-            if k in self.data:
-                data[k] = self.data[k].validation(v)
+        for k, v in self.data.items():
+            try:
+                if k in data:
+                    data[k] = v.validation(data[k])
+                else:
+                    data[k] = v.validation(None)
+            except BaseException as e:
+                raise ValidationException(f"invalid format '{k}'")
 
         data = super().validation(data)
 

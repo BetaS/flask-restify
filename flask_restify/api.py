@@ -29,8 +29,8 @@ class BaseAPI:
         self.docs = swagger.SwaggerDoc(name, description, version)
 
         self.swaggerui = ui.get_swaggerui_blueprint(
-            "/docs",
-            "/swagger.json",
+            "/api/docs",
+            "/api/swagger.json",
             config={
                 'app_name': name,
                 "displayRequestDuration": True,
@@ -46,9 +46,9 @@ class BaseAPI:
 
         self.on_init()
 
-        self.app.register_blueprint(self.swaggerui, url_prefix="/docs")
+        self.app.register_blueprint(self.swaggerui, url_prefix="/api/docs")
 
-        self.app.add_url_rule("/swagger.json", "swagger",
+        self.app.add_url_rule("/api/swagger.json", "swagger",
                               lambda *args, **kwargs: Response(response=json.dumps(self.docs.to_json()), status=200,
                                                                mimetype="application/json"))
 
