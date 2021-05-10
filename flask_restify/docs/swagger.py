@@ -75,7 +75,7 @@ class SwaggerDoc:
                     responses[code] = d
 
                 oper = {
-                    "operationId": data["func"].__qualname__,
+                    "operationId": data["func"].__module__+"."+data["func"].__qualname__,
                     "summary": data["title"],
                     "tags": data["tags"]
                 }

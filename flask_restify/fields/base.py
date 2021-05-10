@@ -22,10 +22,10 @@ class Field:
     def get_swagger(self, for_response=False):
         data = {}
 
-        if len(self.description) > 0:
-            data["description"] = self.description
-
         if not for_response:
+            if len(self.description) > 0:
+                data["description"] = self.description
+
             if self.place:
                 data["in"] = self.place
 
