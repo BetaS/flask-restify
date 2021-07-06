@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='flask_restify',
-    version='0.3.0',
+    version='0.3.1',
     url='https://github.com/BetaS/flask-restify',
     author="BetaS",
     author_email="thou1999@gmail.com",
