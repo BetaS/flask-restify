@@ -87,6 +87,9 @@ class BaseAPI:
             result = func["func"](context, *args, **kwargs)
             code = 200
 
+            if isinstance(result, Response):
+                return result
+
             if type(result) == tuple:
                 code = result[1]
                 result = result[0]
